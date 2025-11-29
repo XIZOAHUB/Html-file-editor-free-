@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pro HTML Editor - Fixed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- CodeMirror CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root{
+      --bg:#0d1117; --panel:#161b22; --accent:#1f6feb; --muted:#8b949e;
+    }
+    body {
+      background:var(--bg);
+      color:#c9d1d9;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    /* Top navbar */
+    header.site-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 18px;
+      border-bottom:1px solid #21262d;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo {
+      width:44px; height:44px; border-radius:8px;
+      background: linear-gradient(135deg,#0ea5e9,#7c3aed);
+      display:inline-flex; align-items:center; justify-content:center;
+      font-weight:700; color:white; font-size:16px;
+    }
+    nav.top-links { display:flex; gap:10px; align-items:center; }
+    nav.top-links a { color:var(--muted); text-decoration:none; font-size:14px; padding:6px 10px; border-radius:6px; }
+    nav.top-links a:hover { background:rgba(255,255,255,0.02); color:#fff; }
+
+    /* Main layout */
+    .main {
+      display:flex;
+      gap:12px;
+      padding:16px;
+      flex:1;
+      overflow:hidden;
+    }
+
+    /* Left Panel: Editors */
+    #left {
+      width:42%;
+      overflow:auto;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      background:var(--panel);
+      border-right:1px solid #30363d;
+    }
+
+    .panel-title { margin-bottom:5px; font-weight:700; font-size:14px; color:#58a6ff; }
+    .editor-card { background: rgba(255,255,255,0.01); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
+
+    .CodeMirror { height:200px !important; border:1px solid #30363d; border-radius:6px; font-size:14px; }
+
+    /* Right Panel: Preview & Console */
+    #right {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      padding:10px;
+      gap:12px;
+      background:transparent;
+      min-width:320px;
+    }
+
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    button { padding:8px 12px; border:0; cursor:pointer; border-radius:6px; font-size:13px; font-weight:700; }
+    .run-btn{ background:#238636; color:#fff; }
+    .theme-btn{ background:#21262d; color:#c9d1d9; border:1px solid #30363d; }
+    .action-btn{ background:var(--accent); color:#fff; }
+
+    #preview{ flex:1; border-radius:8px; border:1px solid #30363d; background:#fff; min-height:200px; }
+    #console{ height:150px; background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:10px; overflow:auto; font-family:monospace; font-size:12px; color:#fff; }
+    .console-log{ border-bottom:1px solid #21262d; padding:4px 0; }
+    .console-error{ color:#ff7b72; }
+
+    /* Right small column: Tools & Links */
+    .side-widgets{ display:flex; gap:12px; flex-direction:column; }
+    .widget { background:var(--panel); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); color:var(--muted); }
+    .tools-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+    .tools-list a { display:block; padding:8px; background:rgba(255,255,255,0.01); color:#c9d1d9; border-radius:6px; text-decoration:none; }
+    .tools-list a:hover { background:rgba(255,255,255,0.02); }
+
+    /* Footer */
+    footer.site-foot {
+      border-top:1px solid #21262d;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      align-items:center;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.01));
+      font-size:13px;
+      color:var(--muted);
+    }
+    .fp-col { display:flex; gap:12px; align-items:center; }
+
+    @media (max-width:980px){
+      #left { width:100%; order:1; }
+      #right { order:2; }
+      .main { flex-direction:column; padding:12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top navbar -->
+  <header class="site-top" role="banner">
+    <div class="brand">
+      <div class="logo">PE</div>
+      <div>
+        <div style="font-weight:800; font-size:16px">Pro HTML Editor</div>
+        <div style="font-size:12px; color:var(--muted)">Client-side editor • Preview • Download</div>
+      </div>
+    </div>
+
+    <nav class="top-links" role="navigation" aria-label="Top Links">
+      <!-- These should map to actual files you will add to repo -->
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/tools/image-converter/" title="More tools">More Tools</a>
+    </nav>
+  </header>
+
+  <!-- Main area -->
+  <div class="main" role="main">
+    <div id="left" aria-label="Editors column">
+      <div class="editor-card">
+        <div class="panel-title">HTML</div>
+        <textarea id="htmlCode"><h1>Hello World</h1><p>Welcome to Pro Editor.</p><button id="btn">Click Me</button></textarea>
+      </div>
+
+      <div class="editor-card">
+        <div class="panel-title">CSS</div>
+        <textarea id="cssCode">body { font-family: sans-serif; text-align:center; padding:20px;} h1 { color:#e91e63; } button { padding:10px 20px; background:#2196F3; color:white; border:none; border-radius:4px; cursor:pointer; }</textarea>
+      </div>
+
+      <div class="editor-card">
+        <div class="panel-title">JavaScript</div>
+        <textarea id="jsCode">document.getElementById('btn').addEventListener('click', () => { alert('Button Clicked!'); console.log('Action logged to custom console');});</textarea>
+      </div>
+
+      <div class="editor-card">
+        <div class="panel-title">💡 Tips</div>
+        <div id="ai-box" style="color:var(--muted); font-size:13px;">
+          - <b>Ctrl/Cmd + S</b> functionality is manual via Save button.<br>
+          - Use <code>console.log()</code> to debug below.<br>
+          - Click <b>RUN</b> to update the preview.
+        </div>
+      </div>
+    </div>
+
+    <div id="right" aria-label="Preview column">
+      <div style="display:flex; gap:10px; align-items:center; justify-content:space-between;">
+        <div class="toolbar">
+          <button class="run-btn" onclick="run()">▶ RUN</button>
+          <button class="theme-btn" onclick="toggleTheme()">Theme</button>
+          <button class="action-btn" onclick="saveProject()">Save</button>
+          <button class="action-btn" onclick="loadProject()">Load</button>
+          <button class="action-btn" onclick="downloadProject()">Download .html</button>
+        </div>
+
+        <!-- Quick tools dropdown -->
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="font-size:13px; color:var(--muted)">Quick Tools:</div>
+          <div style="display:flex; gap:6px;">
+            <a href="/tools/image-converter/" style="background:rgba(255,255,255,0.02); padding:8px; border-radius:6px; color:#c9d1d9; text-decoration:none; font-weight:700;">Image Converter</a>
+            <a href="/tools/seo-checker/" style="background:rgba(255,255,255,0.02); padding:8px; border-radius:6px; color:#c9d1d9; text-decoration:none; font-weight:700;">SEO Checker</a>
+          </div>
+        </div>
+      </div>
+
+      <iframe id="preview" title="Live preview"></iframe>
+
+      <div style="display:flex; gap:12px;">
+        <div id="console" role="log"><strong>>&nbsp; Console Ready...</strong></div>
+
+        <!-- Sidebar widgets (More tools + Important pages) -->
+        <div style="width:260px; display:flex; flex-direction:column; gap:12px;">
+          <div class="widget">
+            <div style="font-weight:800; color:#58a6ff">Explore More Tools</div>
+            <div class="tools-list">
+              <a href="/tools/image-converter/">Image Converter</a>
+              <a href="/tools/pdf-tools/">PDF Tools</a>
+              <a href="/tools/seo-checker/">SEO Checker</a>
+              <a href="/tools/ai-writer/">AI Writer</a>
+            </div>
+          </div>
+
+          <div class="widget">
+            <div style="font-weight:800; color:#58a6ff">Important Pages</div>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <a href="/about.html">About</a>
+              <a href="/privacy.html">Privacy Policy</a>
+              <a href="/terms.html">Terms of Service</a>
+              <a href="/contact.html">Contact</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-foot" role="contentinfo">
+    <div class="fp-col">
+      <div style="font-weight:700">XIZOAHUB Tools</div>
+      <div style="color:var(--muted)">• Built for creators • Client-side • Private</div>
+    </div>
+
+    <div style="display:flex; gap:18px; align-items:center;">
+      <div style="color:var(--muted)">Need more? Add pages <code>/about.html</code> <code>/privacy.html</code> etc. in repo root.</div>
+      <div style="color:var(--muted)"> </div>
+    </div>
+  </footer>
+
+  <!-- CodeMirror and editor JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+
+  <script>
+    // --- Editor Setup ---
+    const editorConfig = { lineNumbers: true, theme: "dracula", tabSize: 2 };
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById("htmlCode"), { mode: "xml", ...editorConfig });
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById("cssCode"), { mode: "css", ...editorConfig });
+    const jsEditor = CodeMirror.fromTextArea(document.getElementById("jsCode"), { mode: "javascript", ...editorConfig });
+
+    // --- Console Logic ---
+    function logToConsole(msg, isError = false) {
+      const con = document.getElementById("console");
+      const div = document.createElement("div");
+      div.className = isError ? "console-log console-error" : "console-log";
+      div.textContent = "> " + msg;
+      con.appendChild(div);
+      con.scrollTop = con.scrollHeight;
+    }
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "console") {
+        logToConsole(event.data.message);
+      } else if (event.data && event.data.type === "error") {
+        logToConsole(event.data.message, true);
+      }
+    });
+
+    // --- Run Function ---
+    function run() {
+      const html = htmlEditor.getValue();
+      const css = `<style>${cssEditor.getValue()}</style>`;
+      const js = `
+        <script>
+          const originalLog = console.log;
+          console.log = function(...args) {
+            const msg = args.map(arg => (typeof arg === 'object') ? JSON.stringify(arg) : String(arg)).join(' ');
+            parent.postMessage({type:'console', message: msg}, '*');
+            originalLog.apply(console, args);
+          };
+          window.onerror = function(message, source, lineno, colno, error) {
+            parent.postMessage({type:'error', message: message + ' (Line: ' + lineno + ')'}, '*');
+          };
+          try {
+            ${jsEditor.getValue()}
+          } catch(e) {
+            console.log("Error: " + e.message);
+          }
+        <\/script>
+      `;
+      const iframe = document.getElementById("preview");
+      const doc = iframe.contentWindow.document;
+      document.getElementById("console").innerHTML = "<strong>>&nbsp; Console Cleared...</strong>";
+      doc.open();
+      doc.write(html + css + js);
+      doc.close();
+    }
+
+    // --- Theme Toggle ---
+    let isDark = true;
+    function toggleTheme() {
+      isDark = !isDark;
+      const theme = isDark ? "dracula" : "default";
+      const bg = isDark ? "#0d1117" : "#f6f6f6";
+      const color = isDark ? "#c9d1d9" : "#222";
+      document.body.style.background = bg;
+      document.body.style.color = color;
+      document.getElementById("left").style.background = isDark ? "#161b22" : "#e9e9e9";
+      htmlEditor.setOption("theme", theme);
+      cssEditor.setOption("theme", theme);
+      jsEditor.setOption("theme", theme);
+    }
+
+    // --- Storage Functions ---
+    function saveProject() {
+      const data = {
+        html: htmlEditor.getValue(),
+        css: cssEditor.getValue(),
+        js: jsEditor.getValue(),
+      };
+      localStorage.setItem("pro_editor_data", JSON.stringify(data));
+      alert("Project Saved to LocalStorage!");
+    }
+    function loadProject() {
+      const raw = localStorage.getItem("pro_editor_data");
+      if (!raw) return alert("No saved project found!");
+      const data = JSON.parse(raw);
+      htmlEditor.setValue(data.html);
+      cssEditor.setValue(data.css);
+      jsEditor.setValue(data.js);
+    }
+    function downloadProject() {
+      const code = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${cssEditor.getValue()}</style></head><body>${htmlEditor.getValue()}<script>${jsEditor.getValue()}<\/script></body></html>`;
+      const blob = new Blob([code], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "my-project.html";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Add keyboard shortcut: Ctrl/Cmd + S to save (just local save)
+    window.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveProject();
+      }
+    });
+  </script>
+</body>
+</html>
